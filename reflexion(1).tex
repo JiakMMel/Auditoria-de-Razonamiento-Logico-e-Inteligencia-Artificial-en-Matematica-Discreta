@@ -1,0 +1,71 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=2.5cm]{geometry}
+
+\begin{document}
+
+\section{Reflexión computacional: LLMs y verificación formal}
+
+\subsection{Lo que observamos}
+
+Auditamos tres modelos (Gemini, ChatGPT y Qwen) sobre cinco problemas obligatorios y el problema bonus. Los resultados no se resumen en «aciertan» o «fallan»; lo informativo es \emph{cómo} se equivocan.
+
+\paragraph{1. La fluidez no es validez.}
+En el Problema~1, Gemini presentó primero una cadena algebraica circular (despejaba $n$ en función de $n$) y afirmó que $n^2+2n+4$ era par sin condición. Al ser confrontado, produjo un argumento de «explosión lógica» que terminaba en una frase sin contenido matemático («si $n$ fuera par tendríamos $n$ impar, y si fuera impar sigue siendo impar»), con el mismo tono seguro que sus pasos correctos. Un lector sin criterio no distingue ambos tramos: el formato, el \LaTeX{} y la seguridad son idénticos. En verificación formal esto es crítico, porque lo que importa es cada paso y no la apariencia del conjunto.
+
+\paragraph{2. Las verificaciones secundarias se omiten.}
+En el Problema~4, ChatGPT despejó correctamente $x=\frac{2y+1}{y-1}$, pero no comprobó que $x\neq 2$; Gemini sí lo hizo. La conclusión era la misma, pero la prueba de ChatGPT estaba incompleta en el único punto donde el enunciado imponía una restricción de dominio. Esta es la clase de condición lateral (de frontera, de dominio, de caso vacío) que suele separar un argumento plausible de uno correcto, y también la que más se olvida en el código.
+
+\paragraph{3. La «verificación» puede ser decorativa.}
+En el bonus, Qwen calculó un permanente $\mathrm{Per}(B)=4$ copiando mal una submatriz (el valor correcto es $5$) y luego declaró «$4=2^2$ $\checkmark$, consistente con la parte a)». Pero el resultado del apartado~a) dice que el \emph{total} es un cuadrado, es decir $\mathrm{Per}(B)^2$, no $\mathrm{Per}(B)$. El modelo usó un criterio que su propio cálculo satisfacía por casualidad como si fuera una comprobación independiente. Una verificación solo vale si podría haber fallado.
+
+\paragraph{4. Resultados invocados sin justificar.}
+En el apartado~a) del bonus, Qwen citó teoremas ($\ldots$ «Kasteleyn–Temperley–Fisher adaptado», «involución con signo») que no conducen a la demostración pedida, y terminó afirmando que la prueba requería «maquinaria avanzada». La demostración correcta, en cambio, es elemental: coloración de tablero, descomposición de la biyección en $B\to N$ y $N\to B$, y principio multiplicativo. Citar un nombre de teorema produce la sensación de rigor sin aportarlo.
+
+\paragraph{5. Resistencia a la presión.}
+Todas las repreguntas falsas (el «36», «no tiene inversa», «el paso inductivo falla») fueron rechazadas, y con argumentos válidos. Esto es un buen resultado, pero conviene no sobreinterpretarlo: resistir una afirmación falsa no equivale a haber verificado la propia. Gemini defendió su 25 con total seguridad (``100\% firme'') y acertó, pero la misma seguridad apareció cuando defendía el argumento sin sentido del Problema~1. Hubo además una diferencia de calibración: ChatGPT ante el «material de la universidad» pidió verlo antes de cambiar nada, mientras que Gemini especuló sobre su contenido.
+
+\paragraph{6. El mismo modelo, el mismo problema, resultados distintos.}
+Qwen respondió al bonus dos veces. En la primera obtuvo $4$ (incorrecto); en la segunda, $25$ (correcto). Ambas ejecuciones no son una comparación controlada (desconocemos si coincidían el modo de razonamiento y la versión), pero basta para mostrar que acertar una vez no certifica el comportamiento del modelo. Un verificador determinista devuelve siempre lo mismo ante la misma entrada; un LLM, no.
+
+\paragraph{7. Respuesta correcta con prueba defectuosa.}
+La segunda ejecución de Qwen acertó el número, pero la justificación tenía errores: afirmó que dos biyecciones eran inversas una de la otra (lo que habría dado $\operatorname{per}(B)$ y no $\operatorname{per}(B)^2$), y presentó una matriz con etiquetas incoherentes que casualmente tenía el mismo permanente. Evaluar solo el resultado final habría marcado esta respuesta como correcta. En verificación formal, un resultado verdadero obtenido por un razonamiento inválido es un fallo: no se puede reutilizar el método en el siguiente caso.
+
+\paragraph{8. Una verificación puede no ser independiente.}
+Al ser confrontado, Qwen aportó código y una salida de «dos conteos» ($25$ y $25$). Pero el segundo conteo comprobaba una condición que se cumple siempre por la simetría de la matriz de adyacencia, de modo que ambos números eran el mismo contado dos veces. Además, el código usaba la figura traspuesta (congruente, con el mismo conteo) sin declararlo. Cuando un modelo ``verifica'' su propia respuesta, conviene preguntarse qué resultado habría hecho fallar esa verificación.
+
+\subsection{Por qué ocurre: lo probabilístico frente a lo determinista}
+
+Un LLM genera texto eligiendo, paso a paso, continuaciones probables. Esto explica el patrón observado:
+
+\begin{itemize}
+\item \textbf{Aciertos en lo canónico.} Las demostraciones de los Problemas~2, 3 y~5 son ejercicios estándar de cualquier curso; es plausible que su estructura esté muy representada en los datos de entrenamiento. (Es una hipótesis: nuestro estudio no puede probarla.)
+\item \textbf{Fallos en lo atípico.} Un enunciado cuyo antecedente es imposible (P1) o una modelización poco habitual (bonus) exigen razonar en lugar de reproducir una plantilla; ahí aparecieron los errores.
+\item \textbf{Sin garantía de corrección.} Un demostrador formal solo acepta un paso si está justificado por una regla. El modelo no tiene ese mecanismo interno: un paso inválido tiene para él un costo similar al de uno válido si ``suena'' bien.
+\end{itemize}
+
+\subsection{Implicaciones para la verificación formal de software}
+
+Si estos modelos se usaran como verificadores, los errores de la sección anterior se trasladarían tal cual: pasos circulares, condiciones laterales omitidas, comprobaciones que no comprueban. En software, un invariante olvidado o una condición de borde sin revisar es precisamente una vulnerabilidad o un fallo.
+
+La conclusión práctica no es descartar los modelos, sino separar dos roles:
+\begin{enumerate}
+\item \textbf{Proponer:} generar candidatos de prueba, lemas o casos de prueba. Aquí son útiles, y en varios problemas dieron la idea correcta (la coloración del bonus, la recurrencia de Fibonacci para el $2\times n$).
+\item \textbf{Verificar:} decidir si la prueba es correcta debe hacerlo un mecanismo independiente y determinista, como un asistente de pruebas (Lean, Coq, Isabelle) o un chequeo computacional.
+\end{enumerate}
+
+Nuestro propio trabajo ilustra el segundo punto: la enumeración exhaustiva por computador confirmó que el bonus tiene $25$ disposiciones y $5$ emparejamientos, y eso detectó el error de Qwen sin depender de ningún criterio de autoridad.
+
+\subsection{Limitaciones de este estudio}
+
+\begin{itemize}
+\item \textbf{Casi una sola ejecución por modelo.} No controlamos la temperatura ni la versión, y solo repetimos una consulta (el bonus con Qwen), que cambió de resultado. Un modelo que acertó una vez podría fallar en otra.
+\item \textbf{Cobertura desigual.} Qwen solo se evaluó en el bonus, y las respuestas iniciales de ChatGPT quedaron parcialmente registradas; no es una comparación equilibrada entre modelos.
+\item \textbf{Repreguntas con falla real aceptadas.} Al señalar las fallas concretas (Gemini en P1, ChatGPT en P4, Qwen en el bonus), los tres modelos las reconocieron y corrigieron. Eso no distingue entre corregirse y ceder siempre: para ello se diseñó un control con acusaciones falsas sobre pasos correctos \textit{(resultados pendientes de incorporar)}.
+\item \textbf{Muestra pequeña.} Seis problemas no permiten estimar tasas de error; los hallazgos son cualitativos.
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,148 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{url}
+
+\renewcommand{\proofname}{Demostración}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\R}{\mathbb{R}}
+
+\begin{document}
+
+\title{Auditoría de Modelos de IA en Matemática Discreta}
+
+\author{\IEEEauthorblockN{{[Nombre y apellidos del autor]}}
+\IEEEauthorblockA{UTEC --- Matemática Discreta para CC\\
+Repositorio: \url{https://github.com/JiakMMel/Auditoria-de-Razonamiento-Logico-e-Inteligencia-Artificial-en-Matematica-Discreta}}}
+
+\maketitle
+
+\begin{abstract}
+Se pidió a tres modelos de IA (Gemini, ChatGPT y Qwen) resolver demostraciones de matemática discreta y un problema de combinatoria. Se revisó cada respuesta contra la solución del grupo y se les repreguntó señalando errores reales y también objeciones falsas. Los modelos resolvieron bien los ejercicios típicos y se corrigieron cuando se les indicó el error, pero cometieron pasos circulares, omitieron condiciones del dominio y, en un caso, llegaron a la respuesta correcta con un razonamiento inválido.
+\end{abstract}
+
+%==================================================================
+\section{Introducción}
+
+Las IA generan demostraciones que parecen correctas, pero en matemática y en verificación de software cada paso debe serlo. Este trabajo revisa cómo responden tres modelos a cinco problemas obligatorios y a un problema bonus, y qué errores cometen. El registro de todas las conversaciones está en el repositorio (carpeta \texttt{logs/} y archivo \texttt{registro\_auditoria.md}).
+
+%==================================================================
+\section{Cómo se hizo}
+
+Se enviaron los enunciados sin pistas a cada modelo y se comparó su respuesta con la solución del grupo (sección~\ref{sec:sol}). Cada respuesta se calificó como \emph{correcta}, \emph{correcta con defectos} (la conclusión es válida pero la justificación tiene errores u omisiones) o \emph{incorrecta}. Después se hicieron repreguntas de dos tipos: con una \emph{objeción falsa} (por ejemplo, decir que el resultado real es otro) y señalando un \emph{error real} y exacto.
+
+Las pruebas se hicieron en noviembre de 2026 desde las interfaces web de cada modelo. Gemini respondió los cinco problemas y el bonus. De ChatGPT se conservan los problemas 4 y 5 y el bonus, y de Qwen solo el bonus (dos veces). No se controló la versión de los modelos.
+
+%==================================================================
+\section{Resultados}
+
+\begin{table}[t]
+\centering
+\caption{Errores principales encontrados.}
+\label{tab:errores}
+\small
+\begin{tabular}{@{}lp{1.2cm}p{4.6cm}@{}}
+\toprule
+Modelo & Problema & Error \\
+\midrule
+Gemini & P1 & Razonamiento circular y afirma que $n^2+2n+4$ es par (falso para $n=1$) \\
+Gemini & P5 & Supone qué dice el material de la universidad sin haberlo visto \\
+ChatGPT & P4 & No comprueba que $x\neq2$ en la sobreyectividad \\
+ChatGPT & Bonus & Anuncia 5 emparejamientos y lista solo 4 \\
+Qwen (1) & Bonus & Copia mal una submatriz, responde 4 en vez de 25 y ``verifica'' con $4=2^2$ \\
+Qwen (2) & Bonus & Acierta 25, pero afirma $g=f^{-1}$ (contradice su propio producto) y usa etiquetas incoherentes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Respuestas.} Gemini acertó los seis problemas, con defectos en P1. ChatGPT acertó P5, y P4 y el bonus con defectos. Qwen falló el bonus en la primera ejecución y acertó en la segunda, pero con una justificación incorrecta (tabla~\ref{tab:errores}).
+
+\textbf{Repreguntas con objeciones falsas.} Gemini mantuvo su respuesta en las seis objeciones; ChatGPT mantuvo 25 cuando se le dijo que el resultado real era 36. Qwen no fue sometido a objeciones falsas.
+
+\textbf{Repreguntas con error real.} Gemini (P1), ChatGPT (P4) y Qwen (bonus) reconocieron el error señalado y lo corrigieron. Gemini, sin embargo, minimizó uno de sus errores al decir que no era realmente inválido.
+
+\textbf{Mismo problema, distinto resultado.} Qwen dio 4 y luego 25 ante el mismo enunciado, así que un acierto aislado no garantiza que el modelo sea confiable.
+
+%==================================================================
+\section{Soluciones del grupo}\label{sec:sol}
+
+\subsection{Problema 1}
+\textbf{Afirmación.} Si $n^2+3n+5$ es par, entonces $n$ es impar.
+
+\begin{proof}[Prueba directa (condición vacua)]
+Sea $n\in\Z$.
+
+\emph{Paso 1.} $n(n+3)$ es par: si $n$ es par, tiene un factor par; si $n$ es impar, $n+3$ es par. Así $n(n+3)=2m$ para algún $m\in\Z$.
+
+\emph{Paso 2.} Entonces
+\[
+n^2+3n+5=n(n+3)+5=2m+5=2(m+2)+1,
+\]
+es decir, $n^2+3n+5$ es impar para todo $n\in\Z$.
+
+\emph{Paso 3.} Como ningún entero es par e impar a la vez, la hipótesis ``$n^2+3n+5$ es par'' es falsa para todo $n$. Una implicación con hipótesis falsa es verdadera, así que la afirmación se cumple (verdad vacua).
+
+Si se parte explícitamente de la hipótesis $n^2+3n+5=2k$, igualando con el paso 2 se obtiene $1=2(k-m-2)$, imposible en $\Z$; de una premisa imposible se sigue cualquier conclusión, en particular que $n$ es impar.
+\end{proof}
+
+\subsection{Problema 2}
+\begin{proof}
+Supongamos $a+b\ge15$ y que no se cumple la conclusión: por De Morgan, $a<8$ y $b<8$. Como son enteros, $a\le7$ y $b\le7$, luego $a+b\le14$, lo que contradice $a+b\ge15$.
+\end{proof}
+
+\subsection{Problema 3}
+\begin{proof}
+\emph{Base} ($n=1$): ambos lados valen 1. \emph{Paso}: supongamos la igualdad para $k$ (hipótesis inductiva, HI). Entonces
+\begin{align*}
+\sum_{i=1}^{k+1}i^3 &\overset{\text{HI}}{=} \frac{k^2(k+1)^2}{4}+(k+1)^3\\
+&=\frac{(k+1)^2}{4}\bigl[k^2+4(k+1)\bigr]\\
+&=\left[\frac{(k+1)(k+2)}{2}\right]^2.
+\end{align*}
+\end{proof}
+
+\subsection{Problema 4}
+Sea $f(x)=\frac{x+1}{x-2}$ de $\R\setminus\{2\}$ a $\R\setminus\{1\}$.
+
+\emph{Inyectiva.} Si $f(x_1)=f(x_2)$, entonces $(x_1+1)(x_2-2)=(x_2+1)(x_1-2)$, que se reduce a $3x_2=3x_1$.
+
+\emph{Sobreyectiva.} Dado $y\ne1$, resolviendo $f(x)=y$ se obtiene $x=\frac{2y+1}{y-1}$. Además $x\neq2$: si fuera 2, $2y+1=2y-2$, absurdo.
+
+\emph{Inversa.} $f$ es biyectiva y
+\[
+f^{-1}:\R\setminus\{1\}\to\R\setminus\{2\},\qquad f^{-1}(y)=\frac{2y+1}{y-1}.
+\]
+
+\subsection{Problema 5}
+$R$ es reflexiva ($a^2-a^2=0$), simétrica (si $a^2-b^2=5k$, entonces $b^2-a^2=5(-k)$) y transitiva (se suman las diferencias). Además $(a,b)\in R$ si y solo si $a^2\equiv b^2 \pmod 5$. Los cuadrados dan residuo 1 para $1,4,6,9,11$; residuo 4 para $2,3,7,8,12$; y residuo 0 para $5,10$. Por tanto
+\[
+S/R=\bigl\{\{5,10\},\{1,4,6,9,11\},\{2,3,7,8,12\}\bigr\}.
+\]
+
+\subsection{Bonus}
+\emph{a)} Una disposición asturiana es una función biyectiva $f:S\to S$ con $f(s)$ vecina de $s$. Con la coloración de ajedrez, cada salto cambia de color, así que $f$ lleva las casillas blancas $B$ a las negras $N$ y viceversa, y ambas partes son biyecciones. Se eligen de forma independiente una biyección $B\to N$ y otra $N\to B$. Si $m$ es el número de las primeras, hay también $m$ de las segundas (se invierten, pues la adyacencia es simétrica). El total es $m^2$.
+
+\emph{b)} Se supone un bloque de $2\times4$ con dos patas de dos casillas en los extremos de abajo. Las patas fuerzan dos asignaciones y el bloque deja $m=5$ posibilidades. Hay $5^2=\mathbf{25}$ disposiciones, confirmado por conteo por computador (script \texttt{verificar\_bonus.py} del repositorio).
+
+%==================================================================
+\section{Reflexión}
+
+Los modelos acertaron los ejercicios típicos de un curso (P2, P3, P5) y fallaron más cuando el problema era menos habitual (P1, con un antecedente imposible, y el bonus). Los errores más graves no fueron de cuentas: fueron pasos circulares, condiciones omitidas (el $x\ne2$ de P4) y comprobaciones que no podían fallar, como ``$4=2^2$''. Todo se presentó con la misma seguridad que lo correcto, de modo que no se puede confiar en el tono del modelo para saber si una prueba es válida.
+
+Un modelo de IA genera texto probable; una prueba válida exige que cada paso se justifique con una regla. Por eso es razonable que las IA sirvan para \emph{proponer} ideas de prueba, como la coloración de ajedrez del bonus, pero que la verificación la haga algo determinista, como un asistente de pruebas~\cite{moura2021} o un programa que cuente los casos. Además, los modelos tienen dificultad para detectar sus propios errores sin ayuda externa~\cite{huang2024}: en este trabajo se corrigieron cuando se les señaló el error exacto.
+
+\section{Conclusión}
+
+Las IA resuelven bien problemas estándar y se corrigen cuando se les indica el error, pero pueden dar respuestas correctas con razonamientos inválidos y cambiar de resultado entre ejecuciones. Para verificar matemática o software, sus respuestas deben comprobarse con un método independiente.
+
+\begin{thebibliography}{1}
+\bibitem{huang2024}
+J.~Huang \textit{et al.}, ``Large language models cannot self-correct reasoning yet,'' in \textit{Proc.\ ICLR}, 2024.
+
+\bibitem{moura2021}
+L.~de Moura and S.~Ullrich, ``The Lean 4 theorem prover and programming language,'' in \textit{Proc.\ CADE-28}, 2021, pp.~625--635.
+\end{thebibliography}
+
+\end{document}
